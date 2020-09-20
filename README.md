@@ -10,4 +10,5 @@ the fork of <https://haali.su/winutils/>
 
 ## DOTO
 * use any keys but show state with ScrollLock LED
-* show state as backgrouds, windows borders or other easy and ALWAYS see elements
+* show state as backgrouds, windows borders or other easy and ALWAYS visible elements
+* update language after switch windows, because OS auto-switching language per window not alwas possible to be disabled
