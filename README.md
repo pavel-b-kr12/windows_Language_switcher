@@ -11,12 +11,12 @@ the fork of <https://haali.su/winutils/>
 * bind to ScrollLock key only (you can recompile with other keycode)
 
 ## DOTO
-* fix it does not work in win explorer save dialog, N++ search, probably all dialogs. Can use hwnd = GetAncestor(hwnd, GA_ROOTOWNER); But it doesn't work if application has only one window and it's modal 
+
 * use any keys but show state with ScrollLock LED
 * show state as backgrouds, windows borders or other easy and ALWAYS visible elements
 * update language after switch windows, because OS auto-switching language per window not alwas possible to be disabled
 * set lang with single key: RShift, RCtrl
-
+* fix:  may not work if application has only one window and it's modal
 ## alternative
 C# approach 
 
