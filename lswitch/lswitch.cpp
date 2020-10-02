@@ -18,8 +18,18 @@ LRESULT CALLBACK KbdHook(int nCode, WPARAM wParam, LPARAM lParam) {
         if (ks->vkCode == 145) { //scroll lock
             if (wParam == WM_KEYDOWN) {
                 HWND hWnd = GetForegroundWindow();
-                if (hWnd)
-                    PostMessage(hWnd, WM_INPUTLANGCHANGEREQUEST, 0, (LPARAM)HKL_NEXT);
+                hWnd = GetAncestor(hWnd, GA_ROOTOWNER); //this for working in modal windows (dialogs), 
+                //but still can't work if application has only one window and it's modal
+
+                //if (hWnd!=NULL)
+                //{
+                    auto r = PostMessage(hWnd, WM_INPUTLANGCHANGEREQUEST, 0, (LPARAM)HKL_NEXT);
+                //    if (!r) return 1; //nw
+                //}
+                //auto l = GetSystemDefaultUILanguage();
+                //auto l = GetUserDefaultLangID();
+                // auto l = GetUserDefaultLCID();
+                //@@ https://docs.microsoft.com/en-us/windows/win32/api/winnls/nf-winnls-getsystemdefaultlocalename?redirectedfrom=MSDN
             }
             //return 1; //do not do default key action
             return CallNextHookEx(g_khook, nCode, wParam, lParam); //do ~, e.g. switch LEDs on keyboard after press Lock keys
