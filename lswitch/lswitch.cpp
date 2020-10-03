@@ -1,43 +1,18 @@
+#define k_lang_eng   VK_RCONTROL
+#define k_lang_other  VK_PAUSE //VK_RSHIFT
+#define k_lang_sw_LED   VK_SCROLL
+
 #define _WIN32_WINNT 0x500
 
 #include <windows.h>
 #include <tchar.h>
 
-TCHAR	g_prog_dir[MAX_PATH * 2];
-DWORD	g_prog_dir_len;
-HHOOK	g_khook;
-HANDLE  g_hEvent;
-UINT	g_key = VK_APPS;
+#include <winnls.h>
 
-LRESULT CALLBACK KbdHook(int nCode, WPARAM wParam, LPARAM lParam) {
-    if (nCode < 0)
-        return CallNextHookEx(g_khook, nCode, wParam, lParam);
-    if (nCode == HC_ACTION) {
-        KBDLLHOOKSTRUCT* ks = (KBDLLHOOKSTRUCT*)lParam;
-        //if (ks->vkCode == g_key) { //145 
-        if (ks->vkCode == 145) { //scroll lock
-            if (wParam == WM_KEYDOWN) {
-                HWND hWnd = GetForegroundWindow();
-                hWnd = GetAncestor(hWnd, GA_ROOTOWNER); //this for working in modal windows (dialogs), 
-                //but still can't work if application has only one window and it's modal
-
-                //if (hWnd!=NULL)
-                //{
-                    auto r = PostMessage(hWnd, WM_INPUTLANGCHANGEREQUEST, 0, (LPARAM)HKL_NEXT);
-                //    if (!r) return 1; //nw
-                //}
-                //auto l = GetSystemDefaultUILanguage();
-                //auto l = GetUserDefaultLangID();
-                // auto l = GetUserDefaultLCID();
-                //@@ https://docs.microsoft.com/en-us/windows/win32/api/winnls/nf-winnls-getsystemdefaultlocalename?redirectedfrom=MSDN
-            }
-            //return 1; //do not do default key action
-            return CallNextHookEx(g_khook, nCode, wParam, lParam); //do ~, e.g. switch LEDs on keyboard after press Lock keys
-        }
-    }
-skip:
-    return CallNextHookEx(g_khook, nCode, wParam, lParam);
-}
+#include <iostream>
+#include <locale.h>
+#include <locale>
+using namespace std;
 
 void  failedx(const TCHAR* msg) {
     MessageBox(NULL, msg, _T("Error"), MB_OK | MB_ICONERROR);
@@ -64,6 +39,87 @@ void  failed(const TCHAR* msg) {
     MessageBox(NULL, msg2, _T("Error"), MB_OK | MB_ICONERROR);
     ExitProcess(1);
 }
+
+
+TCHAR	g_prog_dir[MAX_PATH * 2];
+DWORD	g_prog_dir_len;
+HHOOK	g_khook;
+HANDLE  g_hEvent;
+UINT	g_key = VK_APPS;
+bool bSkipInput=false;
+void pressScrollLock()
+{
+    keybd_event(VK_SCROLL, 0, KEYEVENTF_EXTENDEDKEY, 0);
+    Sleep(10);
+    keybd_event(VK_SCROLL, 0, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+}
+LRESULT CALLBACK KbdHook(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode < 0)
+        return CallNextHookEx(g_khook, nCode, wParam, lParam);
+    if (nCode == HC_ACTION) {
+        KBDLLHOOKSTRUCT* ks = (KBDLLHOOKSTRUCT*)lParam;
+
+        if (ks->vkCode == k_lang_other || ks->vkCode == k_lang_eng || ks->vkCode == k_lang_sw_LED)
+        {
+            if (wParam == WM_KEYDOWN) {
+                if (bSkipInput)
+                {
+                    bSkipInput = false;
+                    return 1; //do not do default key action
+                }
+
+
+                HWND hWnd = GetForegroundWindow();
+                //if (hWnd!=NULL)
+                //{
+                hWnd = GetAncestor(hWnd, GA_ROOTOWNER); //this for working in modal windows (dialogs), 
+                //but still can't work if application has only one window and it's modal
+                //@@@ https://stackoverflow.com/questions/27720728/cant-send-wm-inputlangchangerequest-to-some-controls
+
+                bool bScroll = (GetKeyState(k_lang_sw_LED) & 0x0001) != 0; //true == LED on for different lang (not eng)  //VK_NUMLOCK VK_CAPITAL VK_SCROLL
+                bool bEng = (int)GetKeyboardLayout(GetWindowThreadProcessId(hWnd,NULL)) == 67699721; //MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US) eng is  04090409 == 67699721
+                
+                if (ks->vkCode == k_lang_sw_LED) //scroll lock
+                { //switch lang, fix LED to current lang
+
+                    PostMessage(hWnd, WM_INPUTLANGCHANGEREQUEST, 0, (LPARAM)HKL_NEXT);
+                    bEng = !bEng;
+                    if (bEng == bScroll)
+                    { //LED shows wrong lang state, so fix it:
+                        bSkipInput = true;
+                        pressScrollLock();
+                        
+                        return CallNextHookEx(g_khook, nCode, wParam, lParam); //do ~, e.g. switch LEDs on keyboard after press Lock keys
+                    }
+
+                    return 1;  //do not do default key action, so no change LED again
+                }
+                else
+                    if (ks->vkCode == k_lang_eng)
+                    { //set eng, LED off
+                        if (!bEng)
+                        {
+                            pressScrollLock();
+                        }
+                        return 1; //do not do default key action
+                    }
+                    else
+                        if (ks->vkCode == k_lang_other)
+                        { //set eng, LED off
+                            if (bEng)
+                            {
+                                pressScrollLock();
+                            }
+                            return 1; //do not do default key action
+                        }
+            }
+        }
+    }
+skip:
+    return CallNextHookEx(g_khook, nCode, wParam, lParam);
+}
+
+
 
 void CALLBACK TimerCb(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime) {
     if (WaitForSingleObject(g_hEvent, 0) == WAIT_OBJECT_0)

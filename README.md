@@ -8,15 +8,19 @@ the fork of <https://haali.su/winutils/>
 
 ## Difference:
 * key event pass through, so you will see language stage as LEDs state
-* bind to ScrollLock key only (you can recompile with other keycode)
+* set and switch language with single keys:
+* 'right ctrl' set English and off LED
+* 'pause' set 2nd language and light LED. (it have to be right shift but seems usefull to type ;:)
+* 'ScrollLock' switch language and set LED state as rules above saids.
+* binded to ScrollLock RCTRL RSHIFT keys only (but you can recompile with other keycodes)
 
 ## DOTO
-
-* use any keys but show state with ScrollLock LED
-* show state as backgrouds, windows borders or other easy and ALWAYS visible elements
-* update language after switch windows, because OS auto-switching language per window not alwas possible to be disabled
-* set lang with single key: RShift, RCtrl
+* use any keys but show state with LED
+* show state as backgrounds, windows borders or other easy and ALWAYS visible elements
+* update language after switch windows or sent message to all windows, because OS auto-switching language per window not alwas possible to be disabled
 * fix:  may not work if application has only one window and it's modal
+* make ultimate physical switch using Arduino, some low-force switch (or optical) and magnets to stick it on keyboard, publish to Instructable
+* also use windows shortcut to set LED
 ## alternative
 C# approach 
 
