@@ -6,21 +6,25 @@ put in
 ## this is
 the fork of <https://haali.su/winutils/>
 
-## Difference:
+## Difference from original:
 * key event pass through, so you will see language stage as LEDs state
 * set and switch language with single keys:
 * 'right ctrl' set English and off LED
 * 'pause' set 2nd language and light LED. (it have to be right shift but seems usefull to type ;:)
-* 'ScrollLock' switch language and set LED state as rules above saids.
+* 'ScrollLock' switch language and set LED state as rules above said.
 * binded to ScrollLock RCTRL RSHIFT keys only (but you can recompile with other keycodes)
-
+* optional command-line arguments default: "..../lswitch.exe 145 163 19" where 1st arg for switch key (can be ScrollLock, CapsLock, NumLock), 2nd for eng, 3rd for other lang
+* key codes for command line <https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes>
 ## DOTO
-* use any keys but show state with LED
-* show state as backgrounds, windows borders or other easy and ALWAYS visible elements
-* update language after switch windows or sent message to all windows, because OS auto-switching language per window not alwas possible to be disabled
+* show state as backgrounds, windows borders, cursor color or other easy and ALWAYS visible elements. 
+windows mode light dark switch SetWindowTheme(hwnd, L"DarkMode_Explorer", NULL); <https://stackoverflow.com/questions/53501268/win10-dark-theme-how-to-use-in-winapi>
+* update language after switch windows or sent message to all windows, because OS auto-switching language per window not alwas possible to be disabled (but in current build it seems working and possible to disable autoswitch languages per window)
 * fix:  may not work if application has only one window and it's modal
 * make ultimate physical switch using Arduino, some low-force switch (or optical) and magnets to stick it on keyboard, publish to Instructable
-* also use windows shortcut to set LED
+* more keys for more than 2 languages also use windows shortcut to set LED
+### done
+[+] use any keys but show state with LED
+[+] to detect eng use only The low word contains a Language Identifier for HKL
 ## alternative
 C# approach 
 

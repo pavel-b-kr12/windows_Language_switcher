@@ -1,18 +1,17 @@
-#define k_lang_eng   VK_RCONTROL
-#define k_lang_other  VK_PAUSE //VK_RSHIFT
-#define k_lang_sw_LED   VK_SCROLL
-
 #define _WIN32_WINNT 0x500
-
 #include <windows.h>
 #include <tchar.h>
-
 #include <winnls.h>
-
 #include <iostream>
 #include <locale.h>
 #include <locale>
+#include <shellapi.h>
 using namespace std;
+
+//defaults when command-line args <3
+int k_lang_eng = VK_RCONTROL; //163
+int k_lang_other = VK_PAUSE;    //19    //VK_RSHIFT
+int k_lang_sw_LED = VK_SCROLL;   //145
 
 void  failedx(const TCHAR* msg) {
     MessageBox(NULL, msg, _T("Error"), MB_OK | MB_ICONERROR);
@@ -45,7 +44,7 @@ TCHAR	g_prog_dir[MAX_PATH * 2];
 DWORD	g_prog_dir_len;
 HHOOK	g_khook;
 HANDLE  g_hEvent;
-UINT	g_key = VK_APPS;
+
 bool bSkipInput=false;
 void pressScrollLock()
 {
@@ -77,8 +76,14 @@ LRESULT CALLBACK KbdHook(int nCode, WPARAM wParam, LPARAM lParam) {
                 //@@@ https://stackoverflow.com/questions/27720728/cant-send-wm-inputlangchangerequest-to-some-controls
 
                 bool bScroll = (GetKeyState(k_lang_sw_LED) & 0x0001) != 0; //true == LED on for different lang (not eng)  //VK_NUMLOCK VK_CAPITAL VK_SCROLL
-                bool bEng = (int)GetKeyboardLayout(GetWindowThreadProcessId(hWnd,NULL)) == 67699721; //MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US) eng is  04090409 == 67699721
                 
+				//bool bEng = (int)GetKeyboardLayout(GetWindowThreadProcessId(hWnd, NULL)) == 67699721;
+				//or
+					auto hkl_num = LOWORD(GetKeyboardLayout(GetWindowThreadProcessId(hWnd, NULL)));
+					auto hkl_en_num = LOWORD(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)); // eng is  04090409 == 67699721
+					bool bEng = hkl_num == hkl_en_num;
+				
+
                 if (ks->vkCode == k_lang_sw_LED) //scroll lock
                 { //switch lang, fix LED to current lang
 
@@ -88,7 +93,7 @@ LRESULT CALLBACK KbdHook(int nCode, WPARAM wParam, LPARAM lParam) {
                     { //LED shows wrong lang state, so fix it:
                         bSkipInput = true;
                         pressScrollLock();
-                        
+
                         return CallNextHookEx(g_khook, nCode, wParam, lParam); //do ~, e.g. switch LEDs on keyboard after press Lock keys
                     }
 
@@ -98,18 +103,16 @@ LRESULT CALLBACK KbdHook(int nCode, WPARAM wParam, LPARAM lParam) {
                     if (ks->vkCode == k_lang_eng)
                     { //set eng, LED off
                         if (!bEng)
-                        {
                             pressScrollLock();
-                        }
+
                         return 1; //do not do default key action
                     }
                     else
                         if (ks->vkCode == k_lang_other)
-                        { //set eng, LED off
+                        { //set 2nd lang, LED on
                             if (bEng)
-                            {
                                 pressScrollLock();
-                            }
+
                             return 1; //do not do default key action
                         }
             }
@@ -126,66 +129,79 @@ void CALLBACK TimerCb(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime) {
         PostQuitMessage(0);
 }
 
-int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-    MSG	  msg;
-    DWORD	  sz;
-    BOOL	  fQuit = FALSE;
-    TCHAR* cmd;
+void process_value(TCHAR cmd)
+{
+	UINT    nk = cmd;
+}
 
-    cmd = GetCommandLine();
-    sz = lstrlen(cmd);
-    if (sz > 2 && lstrcmp(cmd + sz - 2, _T(" q")) == 0)
-        fQuit = TRUE;
-    else {
-        UINT    nk = 0;
-        TCHAR* qq = cmd + sz;
+int  WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) {
+	MSG	  msg;
+	BOOL	  fQuit = FALSE;
 
-        while (qq > cmd && qq[-1] >= _T('0') && qq[-1] <= _T('9'))
-            --qq;
-        while (*qq)
-            nk = nk * 10 + *qq++ - _T('0');
-        if (nk)
-            g_key = nk;
-    }
+	int argc;
+	char** argv;
+	{
+		LPWSTR* lpArgv = CommandLineToArgvW(GetCommandLineW(), &argc);
+		argv = (char**)malloc(argc * sizeof(char*));
+		//if argc<4
+		int size, i = 0;
+		for (; i < argc; ++i)
+		{
+			size = wcslen(lpArgv[i]) + 1;
+			argv[i] = (char*)malloc(size);
+			size_t si;
+			wcstombs_s(&si, argv[i], size, lpArgv[i], size); //TODO fix size, I did not read about this function, but it seems working
 
-    g_hEvent = CreateEvent(NULL, TRUE, FALSE, _T("HaaliLSwitch"));
-    if (g_hEvent == NULL)
-        failed(_T("CreateEvent()"));
-    if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        if (fQuit) {
-            SetEvent(g_hEvent);
-            goto quit;
-        }
-        failedx(_T("LSwitch is already running!"));
-    }
+			int num = atoi(argv[i]);
+			switch (i)
+			{
+			case 1: k_lang_sw_LED = num; break;
+			case 2: k_lang_eng = num; break;
+			case 3: k_lang_other = num; break;
+			default:					break;
+			}
+		}
+		{ //free
+			int i = 0;
+			for (; i < argc; ++i)
+				free(argv[i]);
+			free(argv);
+		}
+	}
 
-    if (fQuit)
-        failedx(_T("LSwitch is not running!"));
 
-    sz = GetModuleFileName(NULL, g_prog_dir, MAX_PATH);
-    if (sz == 0)
-        failed(_T("GetModuleFileName()"));
-    if (sz == MAX_PATH)
-        failedx(_T("Module file name is too long."));
-    while (sz > 0 && g_prog_dir[sz - 1] != _T('\\'))
-        --sz;
-    g_prog_dir_len = sz;
+	g_hEvent = CreateEvent(NULL, TRUE, FALSE, _T("HaaliLSwitch"));
+	if (g_hEvent == NULL)
+		failed(_T("CreateEvent()"));
+	if (GetLastError() == ERROR_ALREADY_EXISTS) {
+		if (fQuit) {
+			SetEvent(g_hEvent);
+			goto quit;
+		}
+		failedx(_T("LSwitch is already running!"));
+	}
 
-    if (SetTimer(NULL, 0, 500, TimerCb) == 0)
-        failed(_T("SetTimer()"));
+	if (fQuit)
+		failedx(_T("LSwitch is not running!"));
 
-    g_khook = SetWindowsHookEx(WH_KEYBOARD_LL, KbdHook, GetModuleHandle(0), 0);
-    if (g_khook == 0)
-        failed(_T("SetWindowsHookEx()"));
 
-    while (GetMessage(&msg, 0, 0, 0)) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
+	if (SetTimer(NULL, 0, 500, TimerCb) == 0)
+		failed(_T("SetTimer()"));
 
-    UnhookWindowsHookEx(g_khook);
+	g_khook = SetWindowsHookEx(WH_KEYBOARD_LL, KbdHook, GetModuleHandle(0), 0);
+	if (g_khook == 0)
+		failed(_T("SetWindowsHookEx()"));
+
+	while (GetMessage(&msg, 0, 0, 0)) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+
+	if (g_khook != 0)
+		UnhookWindowsHookEx(g_khook);
 quit:
-    CloseHandle(g_hEvent);
+	if (g_hEvent != 0)
+		CloseHandle(g_hEvent);
 
-    ExitProcess(0);
+	ExitProcess(0);
 }
