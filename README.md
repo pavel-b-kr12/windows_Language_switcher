@@ -16,7 +16,7 @@ the fork of <https://haali.su/winutils/>
 * optional command-line arguments default: "..../lswitch.exe 145 163 19" where 1st arg for switch key (can be ScrollLock, CapsLock, NumLock), 2nd for eng, 3rd for other lang
 * key codes for command line <https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes>
 ## DOTO
-* show state as backgrounds, windows borders, cursor color or other easy and ALWAYS visible elements. 
+* show state as backgrounds, windows borders, cursor color or other easy and ALWAYS visible elements. Use <https://github.com/pavel-b-kr12/langcursor>
 windows mode light dark switch SetWindowTheme(hwnd, L"DarkMode_Explorer", NULL); <https://stackoverflow.com/questions/53501268/win10-dark-theme-how-to-use-in-winapi>
 * update language after switch windows or sent message to all windows, because OS auto-switching language per window not alwas possible to be disabled (but in current build it seems working and possible to disable autoswitch languages per window)
 * fix:  may not work if application has only one window and it's modal
@@ -26,15 +26,15 @@ windows mode light dark switch SetWindowTheme(hwnd, L"DarkMode_Explorer", NULL);
 [+] use any keys but show state with LED
 [+] to detect eng use only The low word contains a Language Identifier for HKL
 ## alternative
-C# approach 
+* C# approach <https://github.com/kurumpa/dotSwitcher/commit/7e3936e217128e21d334250b053d896bfa3f6e1f>
+* <https://github.com/dims12/NormalKeyboardSwitcher>
+* Windows + Space keys to display the language menu
 
-<https://github.com/kurumpa/dotSwitcher/commit/7e3936e217128e21d334250b053d896bfa3f6e1f>
-
-<https://github.com/dims12/NormalKeyboardSwitcher>
-
-Windows + Space keys to display the language menu
-
-status: https://web.archive.org/web/20161029074558/http://www.keybroadapp.com/
+ status: 
+* langcursor <https://github.com/pavel-b-kr12/langcursor> is the fixed version of <https://github.com/saaremaa/langcursor> what is improved version of <https://habr.com/ru/post/138940/>
+There are versions with Lshift and always visible 
+<https://web.archive.org/web/20140910214148/https://bitbucket.org/veg/langcursor/src/50c4913dd0d9/main.cpp>
+* https://web.archive.org/web/20161029074558/http://www.keybroadapp.com/
 
 ## inf
 See settings at:
