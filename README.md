@@ -1,5 +1,5 @@
 # windows_Language_switcher
-switch language according to ScrollLock key
+switch language with any key and sync lang status with ScrollLock or other *Lock key
 
 put in
 %HOMEPATH%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
